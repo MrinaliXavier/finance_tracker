@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction List</title>
+  <link rel="stylesheet" th:href="@{abc.css}"  />
+</head>
+
+<body>
+
+<div th:replace="navigation_bar.html"></div>
+<div class="container">
+  <h1>Transaction List</h1>
+
+  <!-- Form for Adding Transactions -->
+  <form id="addTransactionForm" onsubmit="return addTransaction()">
+    <input type="text" id="amount" placeholder="Amount" required>
+    <input type="text" id="description" placeholder="Description">
+    <input type="text" id="transactionType" placeholder="Transaction Type">
+    <input type="date" id="transactionDate" required>
+    <button type="submit">Add Transaction</button>
+  </form>
+
+  <!-- Transaction List in Table Format -->
+  <table>
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Amount</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="transactionList">
+    <!-- This will dynamically render the transactions when the page loads -->
+    <tr th:each="transaction : ${transactions}">
+      <td th:text="${transaction.transactionId}"></td>
+      <td th:text="${transaction.amount}"></td>
+      <td th:text="${transaction.transactionType}"></td>
+      <td th:text="${transaction.description}"></td>
+      <td th:text="${transaction.transactionDate}"></td>
+      <td class="action-buttons">
+        <button th:attr="onclick='showEditForm(' + ${transaction.transactionId} + ', ' + ${transaction.amount} + ', \''
+                          + ${transaction.description} + '\', \'' + ${transaction.transactionDate} + '\', \'' + ${transaction.transactionType} + '\')'">Edit</button>
+        <button th:attr="onclick='deleteTransaction(' + ${transaction.transactionId} + ')'">Delete</button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <!-- Edit Transaction Form -->
+  <div id="editTransactionFormContainer" style="display:none;">
+    <h2>Edit Transaction</h2>
+      <form id="editTransactionForm" onsubmit="return updateTransaction()">
+        <input type="hidden" id="editTransactionId">
+        <input type="text" id="editAmount" placeholder="Amount" required>
+        <input type="text" id="editDescription" placeholder="Description">
+        <input type="text" id="editTransactionType" placeholder="Transaction Type">
+        <input type="date" id="editTransactionDate" required>
+        <button type="submit">Update Transaction</button>
+        <button type="button" onclick="hideEditForm()">Cancel</button>
+      </form>
+  </div>
+</div>
+
+<script>
+  const apiUrl = '/transactions';
+
+  function addTransaction() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const description = document.getElementById('description').value;
+    const transactionDate = document.getElementById('transactionDate').value;
+    const transactionType = document.getElementById('transactionType').value;
+
+    if (isNaN(amount)) {
+      alert('Amount must be a valid number.');
+      return false;
+    }
+
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: amount,
+        description: description,
+        transactionDate: transactionDate,
+        transactionType: transactionType,
+      })
+    })
+            .then(response => {
+              if (response.ok) {
+                location.reload();
+              } else {
+                alert('Failed to add transaction.');
+              }
+            });
+
+    return false; // Prevent the form from submitting the traditional way
+  }
+
+  function showEditForm(id, amount, description, transactionDate, transactionType) {
+    document.getElementById('editTransactionId').value = id;
+    document.getElementById('editAmount').value = amount;
+    document.getElementById('editDescription').value = description;
+    document.getElementById('editTransactionDate').value = transactionDate;
+    document.getElementById('editTransactionType').value = transactionType;
+    document.getElementById('editTransactionFormContainer').style.display = 'block';
+  }
+
+  function hideEditForm() {
+    document.getElementById('editTransactionFormContainer').style.display = 'none';
+  }
+
+  function updateTransaction() {
+    const id = document.getElementById('editTransactionId').value;
+    const amount = parseFloat(document.getElementById('editAmount').value);
+    const description = document.getElementById('editDescription').value;
+    const transactionDate = document.getElementById('editTransactionDate').value;
+    const transactionType = document.getElementById('editTransactionType').value;
+
+    if (isNaN(amount)) {
+      alert('Amount must be a valid number.');
+      return false;
+    }
+
+    fetch(`${apiUrl}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: amount,
+        description: description,
+        transactionDate: transactionDate,
+        transactionType: transactionType,
+      })
+    })
+            .then(response => {
+              if (response.ok) {
+                hideEditForm();
+                location.reload();
+              } else {
+                alert('Failed to update transaction.');
+              }
+            });
+
+    return false; // Prevent the form from submitting the traditional way
+  }
+
+  function deleteTransaction(id) {
+    fetch(`${apiUrl}/${id}`, {
+      method: 'DELETE'
+    }).then(() => location.reload());
+  }
+</script>
+</body>
+</html>
